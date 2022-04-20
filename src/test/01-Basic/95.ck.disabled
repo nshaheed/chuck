@@ -1,0 +1,63 @@
+// Validate MIDI in/out close properly.
+// This requires an available midi object and is .disabled to not be
+// used in CI testing.
+
+fun void receiveMIDI(int id, dur maxwait, string deviceName)
+{
+    MidiIn min;
+    MidiMsg msg;
+    if(!min.open(deviceName))
+    {
+        me.exit();
+    }
+
+    now => time start;
+    while(now - start < maxwait)
+    {
+        min => now;
+        while(min.recv(msg))
+        {
+        }
+    }
+}
+
+fun void sendMIDI(string deviceName) {
+    MidiOut mout;
+    if(!mout.open(deviceName)) {
+        me.exit();
+    }
+
+    while(true) {
+        MidiMsg msg;
+
+        0x90 => msg.data1;
+        60 => msg.data2;
+        127 => msg.data3;
+        mout.send(msg);
+
+        1::second => now;
+
+        0x80 => msg.data1;
+        60 => msg.data2;
+        0 => msg.data3;
+        mout.send(msg);
+
+        1::second => now;
+    }
+}
+
+MidiIn min;
+if(!min.open(0))
+{
+    me.exit();
+}
+
+min.name() => string deviceName;
+
+spork ~ receiveMIDI(1,5::second, deviceName);
+spork ~ receiveMIDI(2,10::second, deviceName);
+
+spork~ sendMIDI(deviceName);
+
+11::second => now;
+<<< "success" >>>;
