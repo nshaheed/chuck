@@ -1,0 +1,25 @@
+name: Deploy HEAD to the inter-tubes
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    # Sets up the emcc dependency
+    - uses: mymindstorm/setup-emsdk@v11
+
+    - name: Dependencies - Linux
+      run: sudo apt update && sudo apt install --fix-missing -y libsndfile1-dev libpulse-dev libasound2-dev
+
+    - name: Compile - Linux
+      run: cd src/ && rm host_web/webchuck/js/webchuck.js && make web
+      
+    - name: Unit Tests - Linux
+      run: cd src/ && export PATH=$PATH:$(pwd) && cd test/ && python test.py
